@@ -1,82 +1,122 @@
-"use client";
+'use client';
+import { useState, useEffect } from 'react';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
+type Prompt = {
+  id: string;
+  title: string;
+  content: string;
+  model: string;
+  reasoning: any;
+};
 
-import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+export default function CreateAgent({ searchParams }: { searchParams?: { promptId?: string } }) {
+  const [name, setName] = useState('');
+  const [basePrompt, setBasePrompt] = useState('');
+  const [model, setModel] = useState('gpt-5.1');
+  const [reasoning, setReasoning] = useState('{}');
+  const [loading, setLoading] = useState(false);
+  const [prompts, setPrompts] = useState<Prompt[]>([]);
+  const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
 
+  // Fetch user's prompts
+  useEffect(() => {
+    async function fetchPrompts() {
+      const res = await fetch('/api/prompts', { cache: 'no-store' });
+      const json = await res.json();
+      setPrompts(json.data || []);
+    }
+    fetchPrompts();
+  }, []);
 
-export default function CreateAgent() {
-const [name, setName] = useState("");
-const [texts, setTexts] = useState([]);
-const [selectedText, setSelectedText] = useState("");
-const [customPrompt, setCustomPrompt] = useState("");
+  // Prefill from promptId query param
+  useEffect(() => {
+    if (searchParams?.promptId && prompts.length > 0) {
+      const p = prompts.find(pr => pr.id === searchParams.promptId);
+      if (p) {
+        setSelectedPrompt(p);
+        setBasePrompt(p.content);
+        setModel(p.model);
+        setReasoning(JSON.stringify(p.reasoning, null, 2));
+      }
+    }
+  }, [searchParams, prompts]);
 
+  async function handleCreate() {
+    setLoading(true);
+    try {
+      await fetch('/api/agents', {
+        method: 'POST',
+        body: JSON.stringify({
+          name,
+          base_prompt: basePrompt,
+          model,
+          reasoning: JSON.parse(reasoning)
+        })
+      });
+      window.location.href = '/agents';
+    } catch (err) {
+      console.error(err);
+      alert('Error creating agent');
+    } finally {
+      setLoading(false);
+    }
+  }
 
-useEffect(() => {
-fetch("/api/texts")
-.then((r) => r.json())
-.then((json) => setTexts(json.data || []));
-}, []);
+  return (
+    <div className="p-8 flex justify-center">
+      <Card className="max-w-xl w-full space-y-4">
+        <CardHeader>
+          <CardTitle>Create Agent</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Input placeholder="Agent Name" value={name} onChange={e => setName(e.target.value)} />
 
+          <select
+            className="w-full p-2 border rounded"
+            value={selectedPrompt?.id || ''}
+            onChange={e => {
+              const p = prompts.find(pr => pr.id === e.target.value);
+              if (p) {
+                setSelectedPrompt(p);
+                setBasePrompt(p.content);
+                setModel(p.model);
+                setReasoning(JSON.stringify(p.reasoning, null, 2));
+              }
+            }}
+          >
+            <option value="">-- Select Prompt --</option>
+            {prompts.map(p => (
+              <option key={p.id} value={p.id}>{p.title || 'Untitled'}</option>
+            ))}
+          </select>
 
-async function createAgent() {
-const base_prompt = selectedText || customPrompt;
+          <Textarea
+            placeholder="Base Prompt"
+            value={basePrompt}
+            onChange={e => setBasePrompt(e.target.value)}
+          />
 
+          <Input
+            placeholder="Model"
+            value={model}
+            onChange={e => setModel(e.target.value)}
+          />
 
-await fetch("/api/agents", {
-method: "POST",
-body: JSON.stringify({ name, base_prompt }),
-});
+          <Textarea
+            placeholder='Reasoning JSON, e.g. {"effort":"none"}'
+            value={reasoning}
+            onChange={e => setReasoning(e.target.value)}
+          />
 
-
-window.location.href = "/agents";
-}
-
-
-return (
-<div className="p-8 flex justify-center">
-<Card className="max-w-xl w-full">
-<CardHeader>
-<CardTitle>Create New Agent</CardTitle>
-</CardHeader>
-<CardContent className="space-y-4">
-<Input
-placeholder="Agent name"
-value={name}
-onChange={(e) => setName(e.target.value)}
-/>
-
-
-<p className="text-sm font-medium">Choose a Saved Prompt</p>
-<select
-className="w-full border rounded p-2"
-onChange={(e) => setSelectedText(e.target.value)}
->
-<option value="">None</option>
-{texts.map((t: any) => (
-<option key={t.id} value={t.content}>
-{t.title || "Untitled"}
-</option>
-))}
-</select>
-
-
-<p className="text-sm text-muted-foreground text-center">— OR —</p>
-
-
-<Textarea
-placeholder="Write a custom base prompt"
-value={customPrompt}
-onChange={(e) => setCustomPrompt(e.target.value)}
-/>
-
-
-<Button onClick={createAgent} className="w-full">Create Agent</Button>
-</CardContent>
-</Card>
-</div>
-);
+          <Button onClick={handleCreate} className="w-full" disabled={loading}>
+            {loading ? 'Creating...' : 'Create Agent'}
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
 }

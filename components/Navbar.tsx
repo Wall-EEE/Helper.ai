@@ -38,7 +38,7 @@ export default function Navbar() {
             <>
               <span className="font-medium">{user.email}</span>
               <a href="/agents" className="hover:underline">Agents</a>
-              <a href="/texts" className="hover:underline">Texts</a>
+              <a href="/prompts" className="hover:underline">Prompts</a>
               <button
                 className="text-red-500 hover:underline"
                 onClick={handleSignOut}

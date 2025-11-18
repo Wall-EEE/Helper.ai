@@ -44,7 +44,6 @@ helper-ai/
 └── README.md
 
 yaml
-Kopier kode
 
 ---
 

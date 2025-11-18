@@ -2,43 +2,39 @@ import Link from "next/link";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
-async function getAgents() {
+async function getPrompts() {
   // Use absolute URL for server-side fetch
-  const baseUrl =
-    process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-  const res = await fetch(`${baseUrl}/api/agents`, { cache: "no-store" });
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+  const res = await fetch(`${baseUrl}/api/prompts`, { cache: "no-store" });
   const json = await res.json();
   return json.data || [];
 }
 
-export default async function AgentsPage() {
-  const agents = await getAgents();
+export default async function PromptsPage() {
+  const prompts = await getPrompts();
 
   return (
     <div className="p-8 space-y-4">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-semibold">Your Agents</h1>
+        <h1 className="text-2xl font-semibold">Your Prompts</h1>
         <Button asChild>
-          <Link href="/agents/new">Create Agent</Link>
+          <Link href="/prompts/new">Create Prompt</Link>
         </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {agents.map((agent: any) => (
-          <Card key={agent.id}>
+        {prompts.map((prompt: any) => (
+          <Card key={prompt.id}>
             <CardHeader>
-              <CardTitle>{agent.name}</CardTitle>
+              <CardTitle>{prompt.name}</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground line-clamp-2">
-                {agent.base_prompt}
+                {prompt.start_prompt}
               </p>
               <div className="mt-4 flex gap-2">
                 <Button asChild size="sm">
-                  <Link href={`/agents/${agent.id}`}>Edit</Link>
-                </Button>
-                <Button variant="outline" asChild size="sm">
-                  <Link href={`/agents/chat/${agent.id}`}>Chat</Link>
+                  <Link href={`/prompts/${prompt.id}`}>Edit</Link>
                 </Button>
               </div>
             </CardContent>
